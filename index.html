@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memorama Electrónico - Profe Matus</title>
+    <!-- Librería de confeti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #0d1b2a;
+            color: #e0fbfc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 5px;
+        }
+        h1 {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+            color: #00f5d4;
+            text-align: center;
+        }
+        .stats {
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+            color: #8d99ae;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        /* Pantallas */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 440px;
+        }
+        .screen.active {
+            display: flex;
+        }
+        
+        /* 0. PANTALLA DE PRESENTACIÓN / INTRO */
+        .intro-box {
+            background-color: #1b263b;
+            padding: 25px 15px;
+            border-radius: 16px;
+            border: 3px solid #00f5d4;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 0 25px rgba(0, 245, 212, 0.4);
+        }
+        .intro-box h2 {
+            font-size: 1.3rem;
+            color: #00f5d4;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 245, 212, 0.6);
+        }
+        .intro-box p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+        /* Marco de Luces Animadas */
+        .led-lights {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .led {
+            width: 10px;
+            height: 10px;
+            background-color: #ff0055;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ff0055;
+            animation: blinkLED 1.2s infinite alternate;
+        }
+        .led:nth-child(2) { background-color: #ffcc00; box-shadow: 0 0 8px #ffcc00; animation-delay: 0.2s; }
+        .led:nth-child(3) { background-color: #00ffcc; box-shadow: 0 0 8px #00ffcc; animation-delay: 0.4s; }
+        .led:nth-child(4) { background-color: #0055ff; box-shadow: 0 0 8px #0055ff; animation-delay: 0.6s; }
+        .led:nth-child(5) { background-color: #cc00ff; box-shadow: 0 0 8px #cc00ff; animation-delay: 0.8s; }
+
+        @keyframes blinkLED {
+            0% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 15px currentColor; }
+        }
+
+        /* Menú Inicial de Registro y Dificultad */
+        .menu-box {
+            background-color: #1b263b;
+            padding: 18px;
+            border-radius: 12px;
+            border: 2px solid #415a77;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .menu-box input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 12px 0;
+            border-radius: 8px;
+            border: 1px solid #415a77;
+            background-color: #0d1b2a;
+            color: #e0fbfc;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+        .difficulty-selector {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 12px;
+        }
+        .diff-btn {
+            flex: 1;
+            padding: 7px 2px;
+            background-color: #0d1b2a;
+            color: #8d99ae;
+            border: 2px solid #415a77;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .diff-btn.selected {
+            background-color: #00f5d4;
+            color: #0d1b2a;
+            border-color: #00f5d4;
+        }
+        .btn {
+            background-color: #00f5d4;
+            color: #0d1b2a;
+            border: none;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Botón de control de música */
+        .music-btn {
+            background: none;
+            border: 1px solid #00f5d4;
+            color: #00f5d4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        /* Cuadrícula Dinámica del Juego Ajustada */
+        .grid {
+            display: grid;
+            gap: 4px;
+            width: 100%;
+            margin: 0 auto;
+            justify-content: center;
+        }
+        .card {
+            aspect-ratio: 1;
+            background-color: #1b263b;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 2px solid #415a77;
+            transition: transform 0.3s, background-color 0.3s;
+            padding: 2px;
+        }
+        .card.flipped {
+            background-color: #e0fbfc;
+        }
+        /* Tamaño dinámico de imagen según el tablero */
+        .card img {
+            width: var(--img-size, 45px);
+            height: var(--img-size, 45px);
+            object-fit: contain;
+            display: none;
+        }
+        .card .card-text {
+            font-size: var(--text-size, 0.55rem);
+            color: #0d1b2a;
+            font-weight: bold;
+            margin-top: 2px;
+            display: none;
+            text-align: center;
+        }
+        .card.flipped img,
+        .card.flipped .card-text {
+            display: block;
+        }
+        .card.matched {
+            border-color: #00f5d4;
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        /* Animación de acierto */
+        @keyframes successPulse {
+            0% { transform: scale(1); border-color: #00f5d4; background-color: #e0fbfc; box-shadow: 0 0 5px #00f5d4; }
+            50% { transform: scale(1.08); border-color: #00ffcc; background-color: #a7f3d0; box-shadow: 0 0 15px #00ffcc; }
+            100% { transform: scale(1); border-color: #00f5d4; background-color: #e0fbfc; box-shadow: 0 0 5px #00f5d4; }
+        }
+
+        .card.success-anim {
+            animation: successPulse 0.4s ease;
+        }
+
+        /* Tabla de Récords */
+        .score-board {
+            margin-top: 12px;
+            background-color: #1b263b;
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+            border: 1px solid #415a77;
+        }
+        .score-board h3 {
+            font-size: 0.85rem;
+            color: #00f5d4;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            padding: 2px 0;
+            border-bottom: 1px solid #27374d;
+        }
+
+        /* Modal de Victoria */
+        #win-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(13, 27, 42, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .modal-content {
+            background-color: #1b263b;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #00f5d4;
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            animation: popUp 0.3s ease-out;
+        }
+        .modal-content h2 {
+            color: #00f5d4;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        .modal-content p {
+            color: #8d99ae;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+        @keyframes popUp {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 0. PANTALLA DE PRESENTACIÓN (INTRO) -->
+    <div id="intro-screen" class="screen active">
+        <div class="intro-box">
+            <div class="led-lights">
+                <div class="led"></div>
+                <div class="led"></div>
+                <div class="led"></div>
+                <div class="led"></div>
+                <div class="led"></div>
+            </div>
+            <h2>BIENVENIDOS AL MEMORAMA DEL PROFE MATUS</h2>
+            <p>Laboratorio Interactivo de Componentes Electrónicos</p>
+            <button class="btn" onclick="goToMenu()">Ingresar al Juego</button>
+        </div>
+    </div>
+
+    <!-- 1. PANTALLA DE MENÚ / REGISTRO Y DIFICULTAD -->
+    <div id="menu-screen" class="screen">
+        <h1>Memorama Electrónico</h1>
+        <p style="color: #8d99ae; margin-bottom: 12px; font-size: 0.8rem;">Selecciona tu nivel y pon a prueba tu mente</p>
+        
+        <div class="menu-box">
+            <label for="player-name" style="font-size: 0.85rem; font-weight: bold;">Tu Nombre:</label>
+            <input type="text" id="player-name" placeholder="Ej. Profe Matus" maxlength="15">
+
+            <label style="font-size: 0.8rem; font-weight: bold; display:block; margin-bottom: 5px;">Nivel de Dificultad:</label>
+            <div class="difficulty-selector">
+                <button class="diff-btn selected" onclick="setDifficulty('Principiante', 4, 4)">Principiante (4x4)</button>
+                <button class="diff-btn" onclick="setDifficulty('Intermedio', 4, 6)">Intermedio (4x6)</button>
+                <button class="diff-btn" onclick="setDifficulty('Industrial', 4, 8)">Industrial (4x8)</button>
+            </div>
+
+            <button class="btn" onclick="initGame()">Comenzar Partida</button>
+        </div>
+
+        <div class="score-board">
+            <h3>🏆 Mejores Récords</h3>
+            <div id="high-scores-list">
+                <span style="color: #8d99ae; font-size: 0.7rem; display:block; text-align:center;">Sin registros aún</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PANTALLA DE JUEGO -->
+    <div id="game-screen" class="screen">
+        <h1>Memorama</h1>
+        <div class="stats">
+            <span>Jugador: <strong id="current-player" style="color: #00f5d4;"></strong></span>
+            <span>Movs: <span id="moves">0</span></span>
+            <button class="music-btn" id="music-toggle" onclick="toggleMusic()">🔊 Música: ON</button>
+        </div>
+
+        <div class="grid" id="game-grid"></div>
+    </div>
+
+    <!-- 3. MODAL DE VICTORIA -->
+    <div id="win-modal">
+        <div class="modal-content">
+            <h2>¡Felicidades, reto logrado! 🎉</h2>
+            <p>Completaste el reto en <strong id="final-moves" style="color: #e0fbfc;">0</strong> movimientos.</p>
+            <button class="btn" onclick="resetToMenu()">Volver al Menú</button>
+        </div>
+    </div>
+
+    <script>
+        // Catálogo amplio (hasta 24 parejas para cubrir el nivel Industrial 4x8 = 32 cartas)
+        const allItems = [
+            { id: 'resistor', img: 'Resistor.png', label: 'Resistor' },
+            { id: 'capacitor', img: 'Capacitor.png', label: 'Capacitor' },
+            { id: 'transistor', img: 'Transistor.png', label: 'Transistor' },
+            { id: 'multimetro', img: 'Multimetro.png', label: 'Multímetro' },
+            { id: 'oscilloscope', img: 'Osciloscopio.png', label: 'Osciloscopio' },
+            { id: 'led', img: 'Led.png', label: 'LED' },
+            { id: 'arduino', img: 'Arduino.png', label: 'Arduino' },
+            { id: 'protoboard', img: 'Protoboard.png', label: 'Protoboard' },
+            { id: 'plc', img: 'Plc.png', label: 'PLC' },
+            { id: 'rele', img: 'Rele.png', label: 'Relé' },
+            { id: 'diodo', img: 'Diodo.png', label: 'Diodo TVS' },
+            { id: 'igbt', img: 'Igbt.png', label: 'IGBT' },
+            { id: 'sensor', img: 'Sensor.png', label: 'Sensor' },
+            { id: 'transformador', img: 'Transformador.png', label: 'Transformador' },
+            { id: 'cautin', img: 'Cautin.png', label: 'Cautín' },
+            { id: 'fuente', img: 'Fuente.png', label: 'Fuente CC' },
+            { id: 'motor', img: 'Motor.png', label: 'Motor CC' },
+            { id: 'bateria', img: 'Bateria.png', label: 'Batería' },
+            { id: 'interruptor', img: 'Interruptor.png', label: 'Switch' },
+            { id: 'protoboard2', img: 'Protoboard.png', label: 'Placa' },
+            { id: 'cable', img: 'Cable.png', label: 'Jumper' },
+            { id: 'opam', img: 'opam.png', label: 'Op-Amp' },
+            { id: 'buzzer', img: 'Buzzer.png', label: 'Buzzer' },
+            { id: 'display', img: 'display.png', label: 'Display' }
+        ];
+
+        let currentCols = 4;
+        let currentRows = 4;
+        let difficultyName = 'Principiante';
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let isLocked = false;
+        let playerName = "";
+
+        let audioCtx = null;
+        let musicInterval = null;
+        let isMusicPlaying = false;
+
+        const introScreen = document.getElementById('intro-screen');
+        const menuScreen = document.getElementById('menu-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const nameInput = document.getElementById('player-name');
+        const currentPlayerDisplay = document.getElementById('current-player');
+        const grid = document.getElementById('game-grid');
+        const movesDisplay = document.getElementById('moves');
+        const winModal = document.getElementById('win-modal');
+        const finalMovesDisplay = document.getElementById('final-moves');
+        const highScoresList = document.getElementById('high-scores-list');
+        const musicToggleBtn = document.getElementById('music-toggle');
+
+        window.onload = function() {
+            renderHighScores();
+        };
+
+        function goToMenu() {
+            introScreen.classList.remove('active');
+            menuScreen.classList.add('active');
+            renderHighScores();
+        }
+
+        function setDifficulty(name, cols, rows) {
+            difficultyName = name;
+            currentCols = cols;
+            currentRows = rows;
+
+            document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        function initGame() {
+            playerName = nameInput.value.trim();
+            if (!playerName) {
+                alert("Por favor ingresa tu nombre para continuar.");
+                return;
+            }
+
+            currentPlayerDisplay.textContent = playerName;
+            menuScreen.classList.remove('active');
+            winModal.style.display = 'none';
+            gameScreen.classList.add('active');
+
+            startGame();
+            startBackgroundMusic();
+        }
+
+        function playSuccessSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, index) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + (index * 0.08));
+
+                gain.gain.setValueAtTime(0.12, now + (index * 0.08));
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.08) + 0.25);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now + (index * 0.08));
+                osc.stop(now + (index * 0.08) + 0.28);
+            });
+        }
+
+        function startBackgroundMusic() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            stopBackgroundMusic();
+            isMusicPlaying = true;
+            musicToggleBtn.textContent = "🔊 Música: ON";
+
+            const bassNotes = [110, 110, 146.83, 130.81, 98, 110, 130.81, 146.83];
+            let noteIndex = 0;
+
+            musicInterval = setInterval(() => {
+                if (!isMusicPlaying) return;
+
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(bassNotes[noteIndex], audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.38);
+
+                noteIndex = (noteIndex + 1) % bassNotes.length;
+            }, 300);
+        }
+
+        function stopBackgroundMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+            isMusicPlaying = false;
+        }
+
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                stopBackgroundMusic();
+                musicToggleBtn.textContent = "🔇 Música: OFF";
+            } else {
+                isMusicPlaying = true;
+                startBackgroundMusic();
+            }
+        }
+
+        function startGame() {
+            grid.innerHTML = '';
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            isLocked = false;
+            movesDisplay.textContent = moves;
+            winModal.style.display = 'none';
+
+            // Configurar columnas de la cuadrícula y dimensiones adaptativas según el nivel
+            grid.style.gridTemplateColumns = `repeat(${currentCols}, 1fr)`;
+            
+            let maxW = '360px';
+            let imgSize = '45px';
+            let textSize = '0.55rem';
+
+            if (currentRows === 6) {
+                maxW = '380px';
+                imgSize = '38px';
+                textSize = '0.5rem';
+            } else if (currentRows === 8) {
+                maxW = '380px';
+                imgSize = '32px';
+                textSize = '0.45rem';
+            }
+
+            grid.style.maxWidth = maxW;
+            document.documentElement.style.setProperty('--img-size', imgSize);
+            document.documentElement.style.setProperty('--text-size', textSize);
+
+            const totalPairsNeeded = (currentCols * currentRows) / 2;
+            const selectedItems = allItems.slice(0, totalPairsNeeded);
+
+            cards = [...selectedItems, ...selectedItems]
+                .sort(() => Math.random() - 0.5)
+                .map((item, index) => ({
+                    id: index,
+                    name: item.id,
+                    img: item.img,
+                    label: item.label,
+                    isFlipped: false,
+                    isMatched: false
+                }));
+
+            cards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.id = card.id;
+
+                cardElement.innerHTML = `
+                    <img src="${card.img}" alt="${card.label}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2921/2921222.png'">
+                    <span class="card-text">${card.label}</span>
+                `;
+
+                cardElement.addEventListener('click', () => flipCard(card.id, cardElement));
+                grid.appendChild(cardElement);
+            });
+        }
+
+        function flipCard(id, element) {
+            if (isLocked) return;
+            const clickedCard = cards.find(c => c.id == id);
+
+            if (clickedCard.isFlipped || clickedCard.isMatched) return;
+
+            clickedCard.isFlipped = true;
+            element.classList.add('flipped');
+            flippedCards.push({ id, name: clickedCard.name, element });
+
+            if (flippedCards.length === 2) {
+                moves++;
+                movesDisplay.textContent = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+
+            if (card1.name === card2.name) {
+                playSuccessSound();
+
+                card1.element.classList.add('matched', 'success-anim');
+                card2.element.classList.add('matched', 'success-anim');
+
+                cards.find(c => c.id == card1.id).isMatched = true;
+                cards.find(c => c.id == card2.id).isMatched = true;
+
+                flippedCards = [];
+                matchedPairs++;
+
+                const totalPairsNeeded = (currentCols * currentRows) / 2;
+                if (matchedPairs === totalPairsNeeded) {
+                    stopBackgroundMusic();
+                    saveScore();
+                    triggerConfetti();
+                    finalMovesDisplay.textContent = moves;
+                    winModal.style.display = 'flex';
+                }
+            } else {
+                isLocked = true;
+                setTimeout(() => {
+                    cards.find(c => c.id == card1.id).isFlipped = false;
+                    cards.find(c => c.id == card2.id).isFlipped = false;
+                    card1.element.classList.remove('flipped');
+                    card2.element.classList.remove('flipped');
+                    flippedCards = [];
+                    isLocked = false;
+                }, 1000);
+            }
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 120,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function saveScore() {
+            let scores = JSON.parse(localStorage.getItem('memorama_scores')) || [];
+            scores.push({ name: `${playerName} (${difficultyName})`, moves: moves, date: new Date().toLocaleDateString() });
+            scores.sort((a, b) => a.moves - b.moves);
+            scores = scores.slice(0, 5);
+            localStorage.setItem('memorama_scores', JSON.stringify(scores));
+        }
+
+        function renderHighScores() {
+            let scores = JSON.parse(localStorage.getItem('memorage_scores') || localStorage.getItem('memorama_scores')) || [];
+            if (scores.length === 0) {
+                highScoresList.innerHTML = '<span style="color: #8d99ae; font-size: 0.7rem; display:block; text-align:center;">Sin registros aún</span>';
+                return;
+            }
+
+            highScoresList.innerHTML = '';
+            scores.forEach((score, index) => {
+                const div = document.createElement('div');
+                div.classList.add('score-item');
+                div.innerHTML = `<span>${index + 1}. ${score.name}</span> <strong>${score.moves} movs</strong>`;
+                highScoresList.appendChild(div);
+            });
+        }
+
+        function resetToMenu() {
+            stopBackgroundMusic();
+            winModal.style.display = 'none';
+            gameScreen.classList.remove('active');
+            menuScreen.classList.add('active');
+            nameInput.value = '';
+            renderHighScores();
+        }
+    </script>
+</body>
+</html>
