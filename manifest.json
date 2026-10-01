@@ -1,0 +1,13 @@
+{
+  "background_color": "#0d1b2a",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Memorama Electrónico",
+  "orientation": "any",
+  "scope": "//MEMORAMA-DEL-PROFE-MATUS/",
+  "short_name": "Memorama",
+  "start_url": "//MEMORAMA-DEL-PROFE-MATUS/",
+  "theme_color": "#222967",
+  "lang": "es",
+  "description": "Juego de memoria con componentes electrónicos"
+}
