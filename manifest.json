@@ -1,0 +1,18 @@
+{
+  "name": "Memorama Electrónico",
+  "short_name": "Memorama",
+  "start_url": "/MEMORAMA-DEL-PROFE-MATUS/",
+  "scope": "/MEMORAMA-DEL-PROFE-MATUS/",
+  "display": "standalone",
+  "background_color": "#0d1b2a",
+  "theme_color": "#0d1b2a",
+  "orientation": "portrait",
+  "description": "Juego de memoria con componentes electrónicos del Profe Matus",
+  "icons": [
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
